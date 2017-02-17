@@ -69,4 +69,18 @@ public class Connect {
         
     }
     
+    
+    public Connection openNewSession() throws SQLException {
+        return new Connection(DriverManager.getConnection(url, config.getLogin(), config.getPassword()));
+    }
+    
+    
+    public int getConnect_timeout() {
+        return connect_timeout;
+    }
+    
+    
+    public int getMax_connections() {
+        return max_connections;
+    }
 }
