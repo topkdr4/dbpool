@@ -27,8 +27,7 @@ public class Connection implements AutoCloseable {
     }
     
     @Override
-    public void close() throws Exception {
-        Pool pool = Pool.getInstance();
-        pool.addConnection(this);
+    public void close() {
+        Pool.addConnection(this);
     }
 }

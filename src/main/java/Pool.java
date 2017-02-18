@@ -8,46 +8,45 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 
-
-
-
 /**
  * Created by vetoshkin-av on 17.02.2017.
  * vetoshkin-av@dartit.ru
  */
 public final class Pool {
-    
-    private static final Object sync = new Object();
+
+    private static final Object SYNC = new Object();
     private static final String CHECK_CONNECTION = "SELECT 1";
+    private static final BlockingQueue<Connect> UNUSED_CONNECTIONS = new LinkedBlockingQueue<>();
+    private static final BlockingQueue<Connection> USED_CONNECTIONS = new LinkedBlockingQueue<>();
+    private static volatile boolean flag = false;
     private static Pool pool;
-    private final BlockingQueue<Connection> queue = new LinkedBlockingQueue<>();
-    private Connect connect;
-    
-    private Pool(Connect connect) {
-        this.connect = connect;
-    }
-    
+
     private Pool() {
-        
+
     }
-    
-    
-    public static Pool getInstance(Connect connect) {
+
+
+    public static Pool createPool(Connect connect) throws SQLException {
         if (pool == null) {
-            synchronized (sync) {
+            synchronized (SYNC) {
                 if (pool == null) {
-                    pool = new Pool(connect);
+                    connect.createConnection();
+                    pool = new Pool();
+                    for (int i = 0; i < connect.getMax_connections(); i++) {
+                        UNUSED_CONNECTIONS.add(new Connect(connect));
+                    }
+                    ScheduledTask.execute(connect.getConnect_timeout(), 10, Pool::checkAvailable);
                     return pool;
                 }
             }
         }
-        
+
         return pool;
     }
-    
+
     public static Pool getInstance() {
         if (pool == null) {
-            synchronized (sync) {
+            synchronized (SYNC) {
                 if (pool == null) {
                     pool = new Pool();
                     return pool;
@@ -56,44 +55,55 @@ public final class Pool {
         }
         return pool;
     }
-    
-    
-    
-    
-    private void addNewSession() throws SQLException {
-        queue.add(connect.openNewSession());
+
+    public static void addConnection(Connection connection) {
+        /**
+         * Самый жесткий костыль всех времен
+         * */
+        while (flag) {
+        }
+        USED_CONNECTIONS.add(connection);
     }
-    
-    
-    private void checkAvailable() {
-        synchronized (queue) {
-            List<Connection> tempList = new ArrayList<>();
-            
-            for (Connection connection : queue) {
-                try (Statement statement = connection.createStatement();
-                        ResultSet resultSet = statement.executeQuery(CHECK_CONNECTION)) {
-                    int res = 0;
-                    if (resultSet.first()) {
-                        res = resultSet.getInt("1");
-                    }
-                    
-                    if (res != 0)
-                        tempList.add(connection);
-                    
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+
+    private static void checkAvailable() {
+        flag = true;
+        List<Connection> tempList = new ArrayList<>();
+        System.out.println(USED_CONNECTIONS.size());
+        for (Connection connection : USED_CONNECTIONS) {
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(CHECK_CONNECTION)) {
+
+                tempList.add(connection);
+
+            } catch (SQLException e) {
+                //ignore
             }
         }
+        USED_CONNECTIONS.clear();
+        USED_CONNECTIONS.addAll(tempList);
+        flag = false;
     }
-    
-    
-    public Connection getConnection() throws InterruptedException {
-        return queue.poll(3, TimeUnit.SECONDS);
-    }
-    
-    
-    public void addConnection(Connection connection) {
-        this.queue.add(connection);
+
+    public synchronized Connection getConnection() throws SQLException {
+        /**
+         * Самый жесткий костыль всех времен
+         * */
+        while (flag) {
+        }
+        Connection connect;
+        try {
+            connect = USED_CONNECTIONS.poll(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new SQLException(e);
+        }
+
+        if (connect != null)
+            return connect;
+
+        try {
+            return UNUSED_CONNECTIONS.poll(3, TimeUnit.SECONDS).getConnection();
+        } catch (InterruptedException e) {
+            throw new SQLException(e);
+        }
     }
 }
