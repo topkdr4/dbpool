@@ -11,13 +11,11 @@ import java.util.Objects;
  */
 public class Connect {
 
-    private static final Object LOCK = new Object();
     private final DataBase dataBase;
     private final Configurator config;
     private String url;
     private int wait_timeout;
     private int max_connections;
-    private boolean isOpen = false;
     private Connection connection;
 
 
@@ -81,7 +79,6 @@ public class Connect {
     }
 
     public void openNewMySQLSession() throws SQLException {
-        isOpen = true;
         connection = new Connection(DriverManager.getConnection(url, config.getLogin(), config.getPassword()));
     }
 
