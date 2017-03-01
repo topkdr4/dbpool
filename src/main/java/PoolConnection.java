@@ -54,18 +54,10 @@ public class PoolConnection {
     }
     
     public void addConnector(Connector connector) {
-        /*
-        * Sync
-        * */
         this.pool.add(connector);
     }
     
     public Connector getConnection() throws SQLException {
-        
-        /*
-        * Sync
-        * */
-        
         try {
             Connector connector = pool.poll(1500, TimeUnit.MILLISECONDS);
             
@@ -73,17 +65,18 @@ public class PoolConnection {
                 //Если соединение доступно то вернем его
                 if (connector == null) {
                     logger.info("Pool is empty");
-                    throw new AvailableException("null");
+                    throw new InterruptedException("null");
                 }
                     
                 connector.checkAvailable();
-                logger.info("Connection returned");
+                logger.info("Connection returned from pool");
                 return connector;
             } catch (AvailableException e) {
                 //Соединение мертво
                 logger.warn("Dead connection");
                 synchronized (SYNC) {
-                    logger.info("Connection returned");
+                    logger.info("Create and return new Connection");
+                    poolSize--;
                     return new Connector(source.getConnection(), timeOut);
                 }
             }
@@ -95,7 +88,7 @@ public class PoolConnection {
                 synchronized (SYNC) {
                     if (poolSize > 0) {
                         poolSize--;
-                        logger.info("Connection returned");
+                        logger.info("Returned new Connection");
                         return new Connector(source.getConnection(), timeOut);
                     }
                 }
