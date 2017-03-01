@@ -5,6 +5,7 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -21,28 +22,34 @@ public class PoolConnection {
     
     private static final Object SYNC = new Object();
     private static final Logger logger = LogManager.getLogger(PoolConnection.class);
+    private final String name;
     private DataSource source;
-    private BlockingQueue<Connector> pool;
+    private BlockingQueue<Connection> pool = new LinkedBlockingQueue<>();
     private volatile int poolSize = 0;
     private int timeOut = 1000 * 60 * 60;
     private Configuration config;
+    private String CHECK_QUERY;
     
     
-    public PoolConnection(String file) throws IOException {
-        this.config = new Configuration(file);
+    public PoolConnection(String file, String name) throws IOException {
+        this.config = new Configuration(file, name);
+        this.name = name;
     }
     
-    public PoolConnection(Path path) throws IOException {
-        this.config = new Configuration(path);
+    
+    public PoolConnection(Path path, String name) throws IOException {
+        this.config = new Configuration(path, name);
+        this.name = name;
     }
     
     
-    private void createConnections() throws IOException, SQLException {
-        source = config.getDataSource();
-        poolSize = config.getPoolSize();
-        timeOut = config.getTimeOut();
-        pool = new LinkedBlockingQueue<>(poolSize);
+    public void createConnections() throws IOException, SQLException {
+        this.source = config.getDataSource();
+        this.poolSize = config.getPoolSize();
+        this.timeOut = config.getTimeOut();
+        this.CHECK_QUERY = config.getCHECK_QUERY();
     }
+    
     
     public void setDataSource(DataSource source, int poolSize) throws SQLException {
         this.source = source;
@@ -51,34 +58,40 @@ public class PoolConnection {
             throw new IllegalArgumentException("pool size can't be less than 1");
         
         this.poolSize = poolSize;
-        pool = new LinkedBlockingQueue<>();
     }
     
-    public void addConnector(Connector connector) {
-        this.pool.add(connector);
+    
+    public String getName() {
+        return name;
     }
     
-    public Connector getConnection() throws SQLException {
+    
+    public void addConnector(Connection connection) {
+        this.pool.add(connection);
+    }
+    
+    
+    public Connection getConnection() throws SQLException {
         try {
-            Connector connector = pool.poll(1500, TimeUnit.MILLISECONDS);
+            Connection connection = pool.poll(1500, TimeUnit.MILLISECONDS);
             
             try {
                 //Если соединение доступно то вернем его
-                if (connector == null) {
+                if (connection == null) {
                     logger.info("Pool is empty");
                     throw new InterruptedException("null");
                 }
-                    
-                connector.checkAvailable();
+                
+                checkAvailable(connection);
                 logger.info("Connection returned from pool");
-                return connector;
+                return connection;
             } catch (UnavailableException e) {
                 //Соединение мертво
                 logger.warn("Dead connection");
                 synchronized (SYNC) {
                     logger.info("Create and return new Connection");
                     poolSize--;
-                    return new Connector(source.getConnection(), timeOut);
+                    return new Connection(source.getConnection(), this);
                 }
             }
             
@@ -90,11 +103,11 @@ public class PoolConnection {
                     if (poolSize > 0) {
                         poolSize--;
                         logger.info("Returned new Connection");
-                        return new Connector(source.getConnection(), timeOut);
+                        return new Connection(source.getConnection(), this);
                     }
                 }
             }
-    
+            
             //Соединения исчерпаны, возможно врнулось одно из соединений
             logger.warn("possible back one of the connection");
             try {
@@ -103,7 +116,20 @@ public class PoolConnection {
                 logger.warn(e1);
                 throw new SQLException(e1);
             }
+            
+        }
+    }
     
+    private void checkAvailable(Connection connection) throws UnavailableException{
+        long now = System.currentTimeMillis();
+        long stamp = connection.getStamp();
+        if (now - stamp >= timeOut) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeQuery(CHECK_QUERY);
+                connection.setStamp(System.currentTimeMillis());
+            } catch (SQLException e) {
+                throw new UnavailableException(e);
+            }
         }
     }
     

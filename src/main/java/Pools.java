@@ -1,3 +1,5 @@
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,12 +21,14 @@ public class Pools {
         return pools;
     }
     
-    public PoolConnection getPool(String poolName) {
-        return POOL_CONNECTION_MAP.get(poolName);
+    public Connection getConnection(String poolName) throws SQLException {
+        return POOL_CONNECTION_MAP.get(poolName).getConnection();
     }
     
-    public void addPool(String name, PoolConnection pool) {
-        POOL_CONNECTION_MAP.put(name, pool);
+    public void addPool(PoolConnection pool) throws IOException, SQLException {
+        pool.createConnections();
+        POOL_CONNECTION_MAP.put(pool.getName(), pool);
+        
     }
     
 }

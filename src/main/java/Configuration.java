@@ -15,27 +15,32 @@ import java.nio.file.Path;
 public final class Configuration {
     
     private Propertie configuration;
+    private final String name;
+    private String CHECK_QUERY;
     
     
-    public Configuration(String resourcesFile) throws IOException {
+    public Configuration(String resourcesFile, String name) throws IOException {
         this.configuration = new Propertie(resourcesFile);
+        this.name = name;
     }
     
-    public Configuration(Path path) throws IOException {
+    public Configuration(Path path, String name) throws IOException {
         this.configuration = new Propertie(path);
+        this.name = name;
     }
     
     
     public DataSource getDataSource() throws IOException {
-        String bdType = configuration.getStringValue("main.type");
+        String bdType = configuration.getStringValue(name + ".type");
         switch (bdType) {
             case "mysql": {
+                CHECK_QUERY = "SELECT 1";
                 MysqlDataSource source = new MysqlDataSource();
-                source.setDatabaseName(configuration.getStringValue("main.databaseName"));
-                source.setServerName(configuration.getStringValue("main.serverName"));
-                source.setUser(configuration.getStringValue("main.user"));
-                source.setPort(configuration.getIntValue("main.port"));
-                source.setPassword(configuration.getStringValue("main.password"));
+                source.setDatabaseName(configuration.getStringValue(name + ".databaseName"));
+                source.setServerName(configuration.getStringValue(name + ".serverName"));
+                source.setUser(configuration.getStringValue(name + ".user"));
+                source.setPort(configuration.getIntValue(name + ".port"));
+                source.setPassword(configuration.getStringValue(name + ".password"));
                 return source;
             }
             
@@ -50,11 +55,16 @@ public final class Configuration {
     
     
     public int getPoolSize() {
-        return configuration.getIntValue("main.size");
+        return configuration.getIntValue(name + ".size");
     }
     
     
     public int getTimeOut() {
-        return configuration.getIntValue("main.timeout");
+        return configuration.getIntValue(name + ".timeout");
+    }
+    
+    
+    public String getCHECK_QUERY() {
+        return CHECK_QUERY;
     }
 }

@@ -13,20 +13,28 @@ import java.util.concurrent.Executor;
  */
 public class Connection implements java.sql.Connection {
     
-    private static final String CHECK = "SELECT 1";
     private final java.sql.Connection connection;
-    private final int timeOut;
     private final PoolConnection poolConnection;
-    private long stamp = System.currentTimeMillis();
+    private long stamp = 0;
     
     
-    public Connection(java.sql.Connection connection, int timeOut, PoolConnection pool) {
+    public Connection(java.sql.Connection connection, PoolConnection pool) {
         this.connection = connection;
-        this.timeOut = timeOut;
         this.poolConnection = pool;
     }
     
     
+    public long getStamp() {
+        return stamp;
+    }
+    
+    
+    public void setStamp(long stamp) {
+        this.stamp = stamp;
+    }
+    
+    
+    @Override
     public Statement createStatement() throws SQLException {
         return connection.createStatement();
     }
@@ -349,21 +357,4 @@ public class Connection implements java.sql.Connection {
         return connection.isWrapperFor(iface);
     }
     
-    
-    public PreparedStatement preparedStatement(String sql) throws SQLException {
-        return connection.prepareStatement(sql);
-    }
-    
-    
-    public void checkAvailable() throws UnavailableException {
-        long now = System.currentTimeMillis();
-        if (now - stamp >= timeOut) {
-            try (Statement statement = createStatement()) {
-                statement.executeQuery(CHECK);
-                stamp = System.currentTimeMillis();
-            } catch (SQLException e) {
-                throw new UnavailableException(e);
-            }
-        }
-    }
 }

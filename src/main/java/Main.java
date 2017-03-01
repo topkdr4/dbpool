@@ -1,4 +1,5 @@
-import java.util.Random;
+import java.io.IOException;
+import java.sql.SQLException;
 
 
 
@@ -10,9 +11,12 @@ import java.util.Random;
  */
 public class Main {
     
-    public static final Random r = new Random();
-    
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, SQLException {
+        Pools pools = Pools.getInstance();
+        PoolConnection main = new PoolConnection("config.properties", "main");
+        pools.addPool(main);
+        
+        
         
     }
     
