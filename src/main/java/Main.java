@@ -1,20 +1,18 @@
 /**
- * Created by vetoshkin-av on 17.02.2017.
+ * Created by vetoshkin-av on 28.02.2017.
  * vetoshkin-av@dartit.ru
  */
 public class Main {
     
-    
-    
-    public static void main(String[] args) throws InterruptedException {
-        ScheduledTask.execute(2, Main::ololo);
+    public static void main(String[] args) throws Exception {
         
-        Thread.sleep(60000);
-    }
-    
-    
-    private static void ololo() {
-        System.out.println("OLOLO");
+        PoolConnection pool = PoolConnection.getInstance();
+        pool.createConnections();
+        
+        try(Connector connection = pool.getConnection()) {
+            System.out.println(connection.connection.isValid(3));
+            Thread.sleep(5000);
+        }
     }
     
 }
