@@ -33,21 +33,19 @@ public class Connector implements AutoCloseable  {
         return connection.prepareStatement(sql);
     }
     
-    public void checkAvailable() throws AvailableException {
+    public void checkAvailable() throws UnavailableException {
         long now = System.currentTimeMillis();
         if (now - stamp >= timeOut) {
             try (Statement statement = createStatement()) {
                 statement.executeQuery(CHECK);
                 stamp = System.currentTimeMillis();
             } catch (SQLException e) {
-                throw new AvailableException(e);
+                throw new UnavailableException(e);
             }
         }
     }
     
     @Override
     public void close() throws Exception {
-        PoolConnection pool = PoolConnection.getInstance();
-        pool.addConnector(this);
     }
 }

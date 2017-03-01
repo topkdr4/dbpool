@@ -2,6 +2,7 @@ import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.nio.file.Path;
 
 
 
@@ -14,25 +15,27 @@ import java.io.IOException;
 public final class Configuration {
     
     private Propertie configuration;
-    private final String resourcesFile;
     
     
-    public Configuration(String resourcesFile) {
-        this.resourcesFile = resourcesFile;
+    public Configuration(String resourcesFile) throws IOException {
+        this.configuration = new Propertie(resourcesFile);
+    }
+    
+    public Configuration(Path path) throws IOException {
+        this.configuration = new Propertie(path);
     }
     
     
     public DataSource getDataSource() throws IOException {
-        configuration = new Propertie(resourcesFile);
-        String bdType = configuration.getStringValue("main.Type");
+        String bdType = configuration.getStringValue("main.type");
         switch (bdType) {
-            case "my_sql": {
+            case "mysql": {
                 MysqlDataSource source = new MysqlDataSource();
-                source.setDatabaseName(configuration.getStringValue("main.DatabaseName"));
-                source.setServerName(configuration.getStringValue("main.ServerName"));
-                source.setUser(configuration.getStringValue("main.User"));
-                source.setPort(configuration.getIntValue("main.Port"));
-                source.setPassword(configuration.getStringValue("main.Password"));
+                source.setDatabaseName(configuration.getStringValue("main.databaseName"));
+                source.setServerName(configuration.getStringValue("main.serverName"));
+                source.setUser(configuration.getStringValue("main.user"));
+                source.setPort(configuration.getIntValue("main.port"));
+                source.setPassword(configuration.getStringValue("main.password"));
                 return source;
             }
             
@@ -47,11 +50,11 @@ public final class Configuration {
     
     
     public int getPoolSize() {
-        return configuration.getIntValue("main.Size");
+        return configuration.getIntValue("main.size");
     }
     
     
     public int getTimeOut() {
-        return configuration.getIntValue("main.Available");
+        return configuration.getIntValue("main.timeout");
     }
 }

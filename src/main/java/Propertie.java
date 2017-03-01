@@ -44,77 +44,61 @@ public class Propertie {
     
     public Integer getIntValue(String key) {
         String value = properties.getProperty(key);
-        
-        if (value == null)
-            return null;
-        
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return Parser.parseInt(value, null);
+    }
+    
+    
+    public Integer getIntValue(String key, Integer defaultValue) {
+        String value = properties.getProperty(key);
+        return Parser.parseInt(value, defaultValue);
     }
     
     
     public Double getDoubleValue(String key) {
         String value = properties.getProperty(key);
-        
-        if (value == null)
-            return null;
-        
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return Parser.parseDouble(value, null);
+    }
+    
+    
+    public Double getDoubleValue(String key, Double defaultValue) {
+        String value = properties.getProperty(key);
+        return Parser.parseDouble(value, defaultValue);
     }
     
     
     public Long getLongValue(String key) {
         String value = properties.getProperty(key);
-        
-        if (value == null)
-            return null;
-        
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return Parser.parseLong(value, null);
+    }
+    
+    
+    public Long getLongValue(String key, Long defaultValue) {
+        String value = properties.getProperty(key);
+        return Parser.parseLong(value, defaultValue);
     }
     
     
     public Byte getByteValue(String key) {
         String value = properties.getProperty(key);
-        
-        if (value == null)
-            return null;
-        try {
-            return Byte.parseByte(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return Parser.parseByte(value, null);
+    }
+    
+    
+    public Byte getByteValue(String key, Byte defaultValue) {
+        String value = properties.getProperty(key);
+        return Parser.parseByte(value, defaultValue);
     }
     
     
     public Boolean getBooleanValue(String key) {
         String value = properties.getProperty(key);
+        return Parser.parseBoolean(value, null);
+    }
     
-        if (value == null)
-            return null;
     
-        if (value.equalsIgnoreCase("true")  || value.equalsIgnoreCase("on"))
-            return Boolean.TRUE;
-    
-        if (value.equalsIgnoreCase("false") || value.equalsIgnoreCase("off"))
-            return Boolean.FALSE;
-    
-        try {
-            return Integer.parseInt(value) != 0;
-        } catch (NumberFormatException e) {
-            return null;
-        }
-        
+    public boolean getBooleanValue(String key, boolean defaultValue) {
+        String value = properties.getProperty(key);
+        return Parser.parseBoolean(value, defaultValue);
     }
     
     

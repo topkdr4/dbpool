@@ -3,6 +3,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,22 +22,22 @@ public class PoolConnection {
     private static final Object SYNC = new Object();
     private static final Logger logger = LogManager.getLogger(PoolConnection.class);
     private DataSource source;
-    private static PoolConnection poolConnection = new PoolConnection();
     private BlockingQueue<Connector> pool;
     private volatile int poolSize = 0;
     private int timeOut = 1000 * 60 * 60;
+    private Configuration config;
     
     
-    private PoolConnection() {
+    public PoolConnection(String file) throws IOException {
+        this.config = new Configuration(file);
+    }
+    
+    public PoolConnection(Path path) throws IOException {
+        this.config = new Configuration(path);
     }
     
     
-    public static PoolConnection getInstance() {
-        return poolConnection;
-    }
-    
-    public void createConnections() throws IOException, SQLException {
-        Configuration config = new Configuration("config.properties");
+    private void createConnections() throws IOException, SQLException {
         source = config.getDataSource();
         poolSize = config.getPoolSize();
         timeOut = config.getTimeOut();
@@ -71,7 +72,7 @@ public class PoolConnection {
                 connector.checkAvailable();
                 logger.info("Connection returned from pool");
                 return connector;
-            } catch (AvailableException e) {
+            } catch (UnavailableException e) {
                 //Соединение мертво
                 logger.warn("Dead connection");
                 synchronized (SYNC) {
