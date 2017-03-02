@@ -59,4 +59,8 @@ public class DataSourceProperties {
         return prop.getInteger(prefix + ".checkTime");
     }
     
+    
+    public String getDriverType() {
+        return prop.getString(prefix + ".driverType");
+    }
 }

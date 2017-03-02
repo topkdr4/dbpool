@@ -1,9 +1,15 @@
 package pool;
+import com.microsoft.sqlserver.jdbc.SQLServerDataSource;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import oracle.jdbc.pool.OracleDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.postgresql.jdbc3.Jdbc3PoolingDataSource;
 import pool.validator.ConnectionValidator;
+import pool.validator.validatorImpl.MsSqlValidator;
 import pool.validator.validatorImpl.MySqlValidator;
+import pool.validator.validatorImpl.OracleValidator;
+import pool.validator.validatorImpl.PGValidator;
 import utils.DataSourceProperties;
 import utils.Properties;
 
@@ -77,7 +83,7 @@ final class PoolConnection {
         return connection;
     }
     
-    private void setConfiguration() throws IOException {
+    private void setConfiguration() throws IOException, SQLException {
         String bdType = prop.getType();
         switch (bdType) {
             case "mysql": {
@@ -93,6 +99,55 @@ final class PoolConnection {
                 this.timeOut = prop.getTimeOut();
                 this.checkTime = prop.getCheckTime();
                 this.validator = new MySqlValidator();
+                break;
+            }
+            
+            case "oracle": {
+                OracleDataSource source = new OracleDataSource();
+                source.setDatabaseName(prop.getDatabaseName());
+                source.setServerName(prop.getServerName());
+                source.setUser(prop.getUser());
+                source.setPortNumber(prop.getPort());
+                source.setPassword(prop.getPassword());
+                source.setDriverType(prop.getDriverType());
+    
+                this.source = source;
+                this.capacity = prop.getCapacity();
+                this.timeOut = prop.getTimeOut();
+                this.checkTime = prop.getCheckTime();
+                this.validator = new OracleValidator();
+                break;
+            }
+            
+            case "mssql": {
+                SQLServerDataSource source = new SQLServerDataSource();
+                source.setDatabaseName(prop.getDatabaseName());
+                source.setServerName(prop.getServerName());
+                source.setUser(prop.getUser());
+                source.setPortNumber(prop.getPort());
+                source.setPassword(prop.getPassword());
+    
+                this.source = source;
+                this.capacity = prop.getCapacity();
+                this.timeOut = prop.getTimeOut();
+                this.checkTime = prop.getCheckTime();
+                this.validator = new MsSqlValidator();
+                break;
+            }
+            
+            case "pgsql": {
+                Jdbc3PoolingDataSource source = new Jdbc3PoolingDataSource();
+                source.setDatabaseName(prop.getDatabaseName());
+                source.setServerName(prop.getServerName());
+                source.setUser(prop.getUser());
+                source.setPortNumber(prop.getPort());
+                source.setPassword(prop.getPassword());
+    
+                this.source = source;
+                this.capacity = prop.getCapacity();
+                this.timeOut = prop.getTimeOut();
+                this.checkTime = prop.getCheckTime();
+                this.validator = new PGValidator();
                 break;
             }
             
