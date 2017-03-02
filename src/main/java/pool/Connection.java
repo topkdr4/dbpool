@@ -19,18 +19,18 @@ public class Connection implements java.sql.Connection {
     private long stamp = 0;
     
     
-    public Connection(java.sql.Connection connection, PoolConnection pool) {
+    Connection(java.sql.Connection connection, PoolConnection pool) {
         this.connection = connection;
         this.poolConnection = pool;
     }
     
     
-    public long getStamp() {
+    long getStamp() {
         return stamp;
     }
     
     
-    public void setStamp(long stamp) {
+    void setStamp(long stamp) {
         this.stamp = stamp;
     }
     
@@ -85,7 +85,7 @@ public class Connection implements java.sql.Connection {
     
     @Override
     public void close() throws SQLException {
-        poolConnection.addConnection(this);
+        poolConnection.returnConnection(this);
     }
     
     

@@ -1,16 +1,19 @@
 package pool;
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import utils.Configuration;
+import pool.validator.ConnectionValidator;
+import pool.validator.validatorImpl.MySqlValidator;
+import utils.DataSourceProperties;
+import utils.Properties;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 
@@ -20,93 +23,83 @@ import java.util.concurrent.TimeUnit;
  * Created by vetoshkin-av on 01.03.2017.
  * vetoshkin-av@dartit.ru
  */
-public class PoolConnection {
+final class PoolConnection {
     
     private static final Logger logger = LogManager.getLogger(PoolConnection.class);
-    private final String name;
+    private final DataSourceProperties prop;
+    private final BlockingQueue<Connection> pool = new LinkedBlockingQueue<>();
+    private ConnectionValidator validator;
     private DataSource source;
-    private BlockingQueue<Connection> pool = new LinkedBlockingQueue<>();
-    private Configuration config;
-    private String CHECK_QUERY;
     private int capacity;
-    private int waiting;
+    private int timeOut;
     private int checkTime;
     
     
-    public PoolConnection(String file, String name) throws IOException, SQLException {
-        this.config = new Configuration(file, name);
-        this.name = name;
-        loadPoolConfiguration();
+    PoolConnection(Properties properties, String name) throws IOException, SQLException {
+        this.prop = new DataSourceProperties(properties, name);
+        setConfiguration();
     }
     
-    
-    public PoolConnection(Path path, String name) throws IOException, SQLException {
-        this.config = new Configuration(path, name);
-        this.name = name;
-        loadPoolConfiguration();
-    }
-    
-    
-    private void loadPoolConfiguration() throws IOException, SQLException {
-        this.source = config.getDataSource();
-        this.capacity = config.getCapacity();
-        this.waiting = config.getWait();
-        this.checkTime = config.getCheckTime();
-        this.CHECK_QUERY = config.getCHECK_QUERY();
-    }
-    
-    
-    public String getName() {
-        return name;
-    }
-    
-    
-    void addConnection(Connection connection) {
+    void returnConnection(Connection connection) {
         this.pool.add(connection);
         logger.info("connection returned");
     }
     
-    synchronized Connection getConnection() throws SQLException {
+    synchronized Connection getConnection() throws SQLException, TimeoutException {
         Connection connection;
         try {
-            connection = pool.poll(waiting, TimeUnit.SECONDS);
+            connection = pool.poll(timeOut, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new SQLException(e);
         }
         if (connection == null) {
             if (capacity > 0) {
                 capacity--;
-                logger.info("new pool.Connection");
+                logger.info("new Connection");
                 return new Connection(source.getConnection(), this);
             }
             
-            throw new SQLException("pool.Connection not found");
+            throw new TimeoutException("Oops");
         }
     
+        long now = System.currentTimeMillis();
         
-        if (!checkAvailable(connection)) {
-            connection.close();
-            logger.info("dead connection, new connection");
-            return new Connection(source.getConnection(), this);
+        if (now - connection.getStamp() >= checkTime) {
+            if (!validator.isValid(connection)) {
+                connection.close();
+                logger.info("dead connection, new connection");
+                return new Connection(source.getConnection(), this);
+            }
+            connection.setStamp(now);
         }
+        
     
         return connection;
     }
     
-    
-    private boolean checkAvailable(Connection connection) {
-        long now = System.currentTimeMillis();
-        long stamp = connection.getStamp();
-        if (now - stamp >= checkTime) {
-            try (Statement statement = connection.createStatement()) {
-                statement.executeQuery(CHECK_QUERY);
-                connection.setStamp(System.currentTimeMillis());
-            } catch (SQLException e) {
-                return false;
+    private void setConfiguration() throws IOException {
+        String bdType = prop.getType();
+        switch (bdType) {
+            case "mysql": {
+                MysqlDataSource source = new MysqlDataSource();
+                source.setDatabaseName(prop.getDatabaseName());
+                source.setServerName(prop.getServerName());
+                source.setUser(prop.getUser());
+                source.setPort(prop.getPort());
+                source.setPassword(prop.getPassword());
+                
+                this.source = source;
+                this.capacity = prop.getCapacity();
+                this.timeOut = prop.getTimeOut();
+                this.checkTime = prop.getCheckTime();
+                this.validator = new MySqlValidator();
+                break;
             }
+            
+            default:
+                throw new IllegalArgumentException("Unknown data base type");
         }
-        
-        return true;
     }
+    
     
 }
