@@ -12,6 +12,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mysql.version>5.1.6</mysql.version>
+        <oracle.version>1.0</oracle.version>
+        <pg.version>42.0.0.jre7</pg.version>
+        <ms.version>6.1.0.jre8</ms.version>
     </properties>
 
     <dependencies>
@@ -19,37 +23,42 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.6</version>
+            <version>${mysql.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>ojdbc6</groupId>
             <artifactId>ojdbc6</artifactId>
-            <version>1.0</version>
+            <version>${oracle.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>orai18n</groupId>
             <artifactId>orai18n</artifactId>
-            <version>1.0</version>
+            <version>${oracle.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <version>6.1.0.jre8</version>
+            <version>${ms.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.0.0.jre7</version>
+            <version>${pg.version}</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.7</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.24</version>
         </dependency>
 
     </dependencies>
