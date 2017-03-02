@@ -50,7 +50,7 @@ public class DataSourceProperties {
     }
     
     
-    public Integer getTimeOut() {
+    public Integer getWaitTime() {
         return prop.getInteger(prefix + ".timeOut");
     }
     

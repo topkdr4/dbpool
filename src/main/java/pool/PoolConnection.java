@@ -34,7 +34,7 @@ final class PoolConnection {
     private ConnectionValidator validator;
     private DataSource source;
     private int capacity;
-    private int timeOut;
+    private int waitTime;
     private int checkTime;
     
     
@@ -46,14 +46,13 @@ final class PoolConnection {
     
     void returnConnection(Connection connection) {
         this.pool.add(connection);
-        logger.info("connection returned");
     }
     
     
     Connection getConnection() throws SQLException, TimeoutException {
         Connection connection;
         try {
-            connection = pool.poll(timeOut, TimeUnit.SECONDS);
+            connection = pool.poll(waitTime, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new SQLException(e);
         }
@@ -61,20 +60,22 @@ final class PoolConnection {
             synchronized (this) {
                 if (capacity > 0) {
                     capacity--;
-                    logger.info("new Connection");
                     return new Connection(source.getConnection(), this);
                 }
             }
             
-            throw new TimeoutException("Oops");
+            throw new TimeoutException("Connection is not returned");
         }
         
         long now = System.currentTimeMillis();
         
         if (now - connection.getStamp() >= checkTime) {
             if (!validator.isValid(connection)) {
-                connection.close();
-                logger.info("dead connection, new connection");
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    logger.warn("Close of connection exception", e);
+                }
                 return new Connection(source.getConnection(), this);
             }
             connection.setStamp(now);
@@ -107,7 +108,7 @@ final class PoolConnection {
             }
             
             case "pgsql": {
-                this.source = DataSourceFactory.getPG(prop);
+                this.source = DataSourceFactory.getPGSQL(prop);
                 this.validator = new PGValidator();
                 break;
             }
@@ -117,7 +118,7 @@ final class PoolConnection {
         }
         
         this.capacity = prop.getCapacity();
-        this.timeOut = prop.getTimeOut();
+        this.waitTime = prop.getWaitTime();
         this.checkTime = prop.getCheckTime();
     }
     

@@ -54,7 +54,7 @@ public class DataSourceFactory {
         return source;
     }
     
-    static DataSource getPG(DataSourceProperties prop) {
+    static DataSource getPGSQL(DataSourceProperties prop) {
         Jdbc3PoolingDataSource source = new Jdbc3PoolingDataSource();
         source.setDatabaseName(prop.getDatabaseName());
         source.setServerName(prop.getServerName());
