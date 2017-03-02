@@ -42,12 +42,14 @@ final class PoolConnection {
         setConfiguration();
     }
     
+    
     void returnConnection(Connection connection) {
         this.pool.add(connection);
         logger.info("connection returned");
     }
     
-    synchronized Connection getConnection() throws SQLException, TimeoutException {
+    
+    Connection getConnection() throws SQLException, TimeoutException {
         Connection connection;
         try {
             connection = pool.poll(timeOut, TimeUnit.SECONDS);
@@ -55,15 +57,17 @@ final class PoolConnection {
             throw new SQLException(e);
         }
         if (connection == null) {
-            if (capacity > 0) {
-                capacity--;
-                logger.info("new Connection");
-                return new Connection(source.getConnection(), this);
+            synchronized (this) {
+                if (capacity > 0) {
+                    capacity--;
+                    logger.info("new Connection");
+                    return new Connection(source.getConnection(), this);
+                }
             }
             
             throw new TimeoutException("Oops");
         }
-    
+        
         long now = System.currentTimeMillis();
         
         if (now - connection.getStamp() >= checkTime) {
@@ -75,9 +79,10 @@ final class PoolConnection {
             connection.setStamp(now);
         }
         
-    
+        
         return connection;
     }
+    
     
     private void setConfiguration() throws IOException, SQLException {
         String databaseType = prop.getType();
@@ -109,7 +114,7 @@ final class PoolConnection {
             default:
                 throw new IllegalArgumentException("Unknown data base type");
         }
-    
+        
         this.capacity = prop.getCapacity();
         this.timeOut = prop.getTimeOut();
         this.checkTime = prop.getCheckTime();
