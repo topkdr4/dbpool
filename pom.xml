@@ -63,11 +63,6 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <!--<archive>
-                        <manifest>
-                            <mainClass>Start.Start</mainClass>
-                        </manifest>
-                    </archive>-->
                     <appendAssemblyId>false</appendAssemblyId>
                     <attach>false</attach>
                 </configuration>
