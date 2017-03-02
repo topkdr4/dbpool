@@ -1,3 +1,4 @@
+package pool;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
@@ -26,9 +27,7 @@ public class Pools {
     }
     
     public void addPool(PoolConnection pool) throws IOException, SQLException {
-        pool.createConnections();
         POOL_CONNECTION_MAP.put(pool.getName(), pool);
-        
     }
     
 }

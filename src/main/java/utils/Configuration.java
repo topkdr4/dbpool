@@ -1,3 +1,4 @@
+package utils;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
 import javax.sql.DataSource;
@@ -49,18 +50,17 @@ public final class Configuration {
     }
     
     
-    public Propertie getConfiguration() {
-        return configuration;
+    public int getCapacity() {
+        return configuration.getIntValue(name + ".capacity");
     }
     
     
-    public int getPoolSize() {
-        return configuration.getIntValue(name + ".size");
+    public int getWait() {
+        return configuration.getIntValue(name + ".waiting");
     }
     
-    
-    public int getTimeOut() {
-        return configuration.getIntValue(name + ".timeout");
+    public int getCheckTime() {
+        return configuration.getIntValue(name + ".checkTime");
     }
     
     

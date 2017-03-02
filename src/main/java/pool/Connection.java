@@ -1,3 +1,4 @@
+package pool;
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -84,7 +85,7 @@ public class Connection implements java.sql.Connection {
     
     @Override
     public void close() throws SQLException {
-        poolConnection.addConnector(this);
+        poolConnection.addConnection(this);
     }
     
     
